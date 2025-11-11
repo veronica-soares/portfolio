@@ -1,0 +1,54 @@
+# Workflow para fazer deploy de conteúdo estático no GitHub Pages
+name: Deploy static content to Pages
+
+on:
+  # Executa em pushes para a branch 'main'
+  push:
+    branches: ["main"]
+
+  # Permite que você execute este workflow manualmente na aba Actions
+  workflow_dispatch:
+
+# Define as permissões do GITHUB_TOKEN para permitir o deploy no GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Permite apenas um deploy concorrente
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Job único de deploy
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20 # Pode ser 18 ou 20
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8 # ou a versão do pnpm que você usa
+      - name: Install dependencies
+        run: pnpm install
+      - name: Build
+        run: pnpm run build # Este comando deve criar a pasta 'dist'
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Faz o upload do diretório 'dist'
+          path: './dist'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
